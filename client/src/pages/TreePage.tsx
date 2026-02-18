@@ -10,7 +10,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ReactFlowProvider, useReactFlow } from "@xyflow/react";
-import { Monitor } from "lucide-react";
+import { Monitor, Check } from "lucide-react";
 import { AppHeader } from "../components/layout/AppHeader.js";
 import { TreeToolbar } from "../components/layout/TreeToolbar.js";
 import { TreeCanvas } from "../components/tree/TreeCanvas.js";
@@ -117,14 +117,27 @@ export default function TreePage() {
     setZoom(newZoom);
   }, []);
 
-  // Toast state
+  // Toast state — two-phase: visible (with enter), then exiting (with exit animation)
   const [toast, setToast] = useState<string | null>(null);
+  const [toastExiting, setToastExiting] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function showToast(message: string) {
+    // Cancel any running exit
+    if (toastExitTimerRef.current) clearTimeout(toastExitTimerRef.current);
+    setToastExiting(false);
     setToast(message);
+
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => setToast(null), 4000);
+    toastTimerRef.current = setTimeout(() => {
+      // Start exit animation, then remove from DOM
+      setToastExiting(true);
+      toastExitTimerRef.current = setTimeout(() => {
+        setToast(null);
+        setToastExiting(false);
+      }, 200); // matches toast-exit duration
+    }, 4000);
   }
 
   if (treeLoading) {
@@ -252,7 +265,12 @@ export default function TreePage() {
 
       {/* Share/copy toast */}
       {toast && (
-        <div className="toast" role="status" aria-live="polite">
+        <div
+          className={`toast${toastExiting ? " toast--exit" : ""}`}
+          role="status"
+          aria-live="polite"
+        >
+          <Check size={16} style={{ color: "var(--color-text-inverse)", flexShrink: 0 }} />
           {toast}
         </div>
       )}
@@ -277,7 +295,8 @@ export default function TreePage() {
           display: none;
         }
 
-        @media (max-width: 767px) {
+        /* Below 1024px: show desktop gate, hide tree canvas */
+        @media (max-width: 1023px) {
           .tree-page-narrow-msg {
             display: flex;
             flex-direction: column;

@@ -310,6 +310,24 @@ export function TreeToolbar({
           display: flex;
           align-items: center;
           gap: var(--space-2);
+          flex-shrink: 0;
+        }
+
+        /* 1024px-1279px: tighten the toolbar to prevent overflow */
+        @media (min-width: 1024px) and (max-width: 1279px) {
+          .tree-toolbar {
+            padding: 0 var(--space-3);
+          }
+
+          .tree-toolbar__name {
+            max-width: 180px;
+          }
+
+          .tree-toolbar__left {
+            gap: var(--space-2);
+            min-width: 0;
+            overflow: hidden;
+          }
         }
       `}</style>
     </div>

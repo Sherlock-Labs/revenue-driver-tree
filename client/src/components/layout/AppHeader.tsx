@@ -139,6 +139,25 @@ export function AppHeader({ saveStatus, onRetrySave }: AppHeaderProps) {
         .save-status__spinner {
           animation: spin 0.6s linear infinite;
         }
+
+        /* 1024px-1279px: compress header to fit narrower viewport */
+        @media (min-width: 1024px) and (max-width: 1279px) {
+          .app-header {
+            padding: 0 var(--space-4);
+          }
+
+          .app-header__left {
+            gap: var(--space-3);
+          }
+
+          /* Truncate save status text on narrower widths to prevent overflow */
+          .app-header__save-status {
+            max-width: 160px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+          }
+        }
       `}</style>
     </header>
   );

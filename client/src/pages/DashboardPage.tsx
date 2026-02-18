@@ -304,7 +304,8 @@ export default function DashboardPage() {
           justify-content: flex-end;
         }
 
-        @media (max-width: 767px) {
+        /* Below 1024px: show desktop gate, hide dashboard content */
+        @media (max-width: 1023px) {
           .desktop-only-message {
             display: flex;
             flex-direction: column;
@@ -333,6 +334,17 @@ export default function DashboardPage() {
 
           .dashboard {
             display: none;
+          }
+        }
+
+        /* 1024px-1279px: tighten dashboard grid to 2 columns */
+        @media (min-width: 1024px) and (max-width: 1279px) {
+          .dashboard__grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .page-container {
+            padding: var(--space-6) var(--space-5);
           }
         }
       `}</style>

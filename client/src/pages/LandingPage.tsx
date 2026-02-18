@@ -275,10 +275,13 @@ export default function LandingPage() {
           margin-top: auto;
         }
 
-        /* Responsive */
+        /* Responsive — Mobile first, layering up */
+
+        /* 768px-1023px: single-column features, medium hero */
         @media (max-width: 1023px) {
           .landing-feature {
             grid-template-columns: 1fr;
+            gap: var(--space-6);
           }
 
           .landing-feature--reverse {
@@ -288,11 +291,20 @@ export default function LandingPage() {
           .landing-hero__headline {
             font-size: var(--text-4xl);
           }
+
+          .landing-features {
+            gap: var(--space-16);
+          }
         }
 
+        /* < 768px: compact mobile layout */
         @media (max-width: 767px) {
           .landing-hero-wrapper {
             padding: var(--space-12) var(--space-4) var(--space-8);
+          }
+
+          .landing-hero {
+            max-width: 100%;
           }
 
           .landing-hero__headline {
@@ -301,10 +313,16 @@ export default function LandingPage() {
 
           .landing-hero__subhead {
             font-size: var(--text-lg);
+            max-width: 100%;
           }
 
           .landing-header {
             padding: 0 var(--space-4);
+          }
+
+          /* Hide large CTA button on mobile — sign-in link still visible */
+          .landing-header__cta {
+            display: none;
           }
 
           .landing-features {
@@ -312,8 +330,32 @@ export default function LandingPage() {
             gap: var(--space-12);
           }
 
-          .landing-header__cta {
-            display: none;
+          .landing-bottom-cta {
+            padding: var(--space-12) var(--space-4);
+          }
+
+          .landing-bottom-cta__headline {
+            font-size: var(--text-xl);
+          }
+
+          .landing-footer {
+            padding: var(--space-6) var(--space-4);
+          }
+        }
+
+        /* Very small screens (320px-374px) — prevent overflow */
+        @media (max-width: 374px) {
+          .landing-hero__headline {
+            font-size: var(--text-2xl);
+          }
+
+          .landing-hero__subhead {
+            font-size: var(--text-base);
+          }
+
+          .btn-large {
+            padding: 0 var(--space-4);
+            font-size: var(--text-sm);
           }
         }
       `}</style>

@@ -601,9 +601,26 @@ export function CreateTreeForm() {
           box-shadow: 0 0 0 3px rgba(23, 23, 23, 0.08);
         }
 
+        /* Collapse 2-column rows to 1 on narrow screens */
         @media (max-width: 540px) {
           .create-tree__row {
             grid-template-columns: 1fr;
+          }
+
+          .create-tree {
+            padding: var(--space-8) var(--space-4) var(--space-12);
+          }
+
+          .create-tree__title {
+            font-size: var(--text-xl);
+          }
+        }
+
+        /* Ensure form inputs meet 44px minimum touch target height on mobile */
+        @media (max-width: 767px) {
+          .form-field__input,
+          .form-field__select {
+            height: 44px;
           }
         }
       `}</style>

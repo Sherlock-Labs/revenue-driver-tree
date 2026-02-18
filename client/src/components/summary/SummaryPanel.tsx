@@ -36,7 +36,7 @@ export function SummaryPanel({
   const [summary, setSummary] = useState<string>("");
   const [loadingText, setLoadingText] = useState("Generating summary...");
   const [copied, setCopied] = useState(false);
-  const [loadingTimer, setLoadingTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const loadingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Ref to the close button — focus moves here when panel opens
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   // Track previous isOpen value to detect transitions
@@ -63,11 +63,17 @@ export function SummaryPanel({
       const timer = setTimeout(() => {
         setLoadingText("Still analyzing...");
       }, 5000);
-      setLoadingTimer(timer);
-      return () => clearTimeout(timer);
+      loadingTimerRef.current = timer;
+      return () => {
+        clearTimeout(timer);
+        loadingTimerRef.current = null;
+      };
     } else {
       setLoadingText("Generating summary...");
-      if (loadingTimer) clearTimeout(loadingTimer);
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
     }
   }, [panelState]);
 

@@ -11,7 +11,7 @@
  * Design spec Section 7
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import {
@@ -64,16 +64,19 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
     if (depth === undefined) return;
 
     const delay = (depth - 1) * 50; // 0ms for depth 1, 50ms for depth 2, etc.
+    let clearTimer: ReturnType<typeof setTimeout> | undefined;
     const startTimer = setTimeout(() => {
       setIsRecalculating(true);
       // Clear the animation class after it completes (300ms animation + buffer)
-      const clearTimer = setTimeout(() => setIsRecalculating(false), 350);
-      return () => clearTimeout(clearTimer);
+      clearTimer = setTimeout(() => setIsRecalculating(false), 350);
     }, delay);
-    return () => clearTimeout(startTimer);
+    return () => {
+      clearTimeout(startTimer);
+      if (clearTimer) clearTimeout(clearTimer);
+    };
   }, [recalculatingNodeDepths, data.id]);
 
-  const branchNodeIds = buildBranchNodeIds(allNodes);
+  const branchNodeIds = useMemo(() => buildBranchNodeIds(allNodes), [allNodes]);
   const hasChildren = branchNodeIds.has(data.id);
 
   // Compute status

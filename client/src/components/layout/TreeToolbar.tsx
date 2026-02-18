@@ -117,38 +117,38 @@ export function TreeToolbar({
           </span>
         )}
 
+        <div className="tree-toolbar__divider" />
+
+        <div className="tree-toolbar__zoom-controls">
+          <button
+            className="icon-btn tree-toolbar__zoom-btn"
+            onClick={onZoomOut}
+            title="Zoom out"
+            aria-label="Zoom out"
+          >
+            <Minus size={14} />
+          </button>
+          <span className="tree-toolbar__zoom-level">{zoomPercent}%</span>
+          <button
+            className="icon-btn tree-toolbar__zoom-btn"
+            onClick={onZoomIn}
+            title="Zoom in"
+            aria-label="Zoom in"
+          >
+            <Plus size={14} />
+          </button>
+          <button
+            className="icon-btn tree-toolbar__zoom-btn"
+            onClick={onFitView}
+            title="Fit to screen"
+            aria-label="Fit to screen"
+          >
+            <Maximize2 size={14} />
+          </button>
+        </div>
+
         {!readOnly && (
           <>
-            <div className="tree-toolbar__divider" />
-
-            <div className="tree-toolbar__zoom-controls">
-              <button
-                className="icon-btn tree-toolbar__zoom-btn"
-                onClick={onZoomOut}
-                title="Zoom out"
-                aria-label="Zoom out"
-              >
-                <Minus size={14} />
-              </button>
-              <span className="tree-toolbar__zoom-level">{zoomPercent}%</span>
-              <button
-                className="icon-btn tree-toolbar__zoom-btn"
-                onClick={onZoomIn}
-                title="Zoom in"
-                aria-label="Zoom in"
-              >
-                <Plus size={14} />
-              </button>
-              <button
-                className="icon-btn tree-toolbar__zoom-btn"
-                onClick={onFitView}
-                title="Fit to screen"
-                aria-label="Fit to screen"
-              >
-                <Maximize2 size={14} />
-              </button>
-            </div>
-
             <div className="tree-toolbar__divider" />
 
             <div className="tree-toolbar__undo-redo">
@@ -169,39 +169,6 @@ export function TreeToolbar({
                 aria-label="Redo"
               >
                 <Redo2 size={14} />
-              </button>
-            </div>
-          </>
-        )}
-
-        {readOnly && (
-          <>
-            <div className="tree-toolbar__divider" />
-            <div className="tree-toolbar__zoom-controls">
-              <button
-                className="icon-btn tree-toolbar__zoom-btn"
-                onClick={onZoomOut}
-                title="Zoom out"
-                aria-label="Zoom out"
-              >
-                <Minus size={14} />
-              </button>
-              <span className="tree-toolbar__zoom-level">{zoomPercent}%</span>
-              <button
-                className="icon-btn tree-toolbar__zoom-btn"
-                onClick={onZoomIn}
-                title="Zoom in"
-                aria-label="Zoom in"
-              >
-                <Plus size={14} />
-              </button>
-              <button
-                className="icon-btn tree-toolbar__zoom-btn"
-                onClick={onFitView}
-                title="Fit to screen"
-                aria-label="Fit to screen"
-              >
-                <Maximize2 size={14} />
               </button>
             </div>
           </>

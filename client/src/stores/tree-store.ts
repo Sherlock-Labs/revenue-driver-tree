@@ -11,6 +11,9 @@ import { recalculate } from "../lib/tree-engine.js";
 
 const MAX_UNDO_STACK = 50;
 
+// Module-level ref for the ripple-clear timeout so rapid edits cancel the previous one
+let rippleClearTimer: ReturnType<typeof setTimeout> | undefined;
+
 interface TreeState {
   // Tree data
   nodes: TreeNode[];
@@ -82,8 +85,10 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     });
 
     // Clear the ripple state after all animations complete (max depth * 50ms + 300ms animation)
+    // Cancel any pending clear from a previous edit so rapid edits don't interfere
+    clearTimeout(rippleClearTimer);
     const clearDelay = Math.max(depth * 50 + 350, 500);
-    setTimeout(() => {
+    rippleClearTimer = setTimeout(() => {
       set({ recalculatingNodeDepths: new Map() });
     }, clearDelay);
   },

@@ -116,14 +116,13 @@ export function formatDelta(delta: number, type: "currency" | "percentage" | "co
   switch (type) {
     case "currency": {
       const absDelta = Math.abs(delta);
-      const prefix = delta >= 0 ? "+" : "-";
       if (absDelta >= 1_000_000) {
-        return `${prefix}$${(absDelta / 1_000_000).toFixed(1)}M`;
+        return `${sign}$${(absDelta / 1_000_000).toFixed(1)}M`;
       }
       if (absDelta >= 1_000) {
-        return `${prefix}$${(absDelta / 1_000).toFixed(0)}K`;
+        return `${sign}$${(absDelta / 1_000).toFixed(0)}K`;
       }
-      return `${prefix}$${absDelta.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+      return `${sign}$${absDelta.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
     }
     case "percentage":
       return `${sign}${(delta * 100).toFixed(1)}pp`;

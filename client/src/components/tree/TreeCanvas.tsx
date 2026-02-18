@@ -8,7 +8,7 @@
  * Design spec Section 6.3, Tech approach Section 6
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback } from "react";
 import {
   ReactFlow,
   Background,

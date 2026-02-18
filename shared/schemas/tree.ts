@@ -2,15 +2,15 @@ import { z } from "zod";
 
 // --- Node schema (flat array element) ---
 export const TreeNodeSchema = z.object({
-  id: z.string(),
-  parentId: z.string().nullable(),
-  name: z.string(),
-  value: z.number(),
-  targetValue: z.number(),
+  id: z.string().min(1).max(100),
+  parentId: z.string().min(1).max(100).nullable(),
+  name: z.string().min(1).max(200),
+  value: z.number().finite(),
+  targetValue: z.number().finite(),
   type: z.enum(["currency", "percentage", "count"]),
   computeType: z.enum(["input", "sum", "product"]),
   pinned: z.boolean().default(false),
-  order: z.number(),
+  order: z.number().int().min(0).max(1000),
   collapsed: z.boolean().default(false),
 });
 
@@ -35,9 +35,9 @@ export type TreeInputs = z.infer<typeof TreeInputsSchema>;
 // --- Full tree (API response) ---
 export const TreeSchema = z.object({
   id: z.string().uuid(),
-  name: z.string(),
+  name: z.string().min(1).max(500),
   inputs: TreeInputsSchema,
-  nodes: z.array(TreeNodeSchema),
+  nodes: z.array(TreeNodeSchema).max(200),
   shareToken: z.string().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),

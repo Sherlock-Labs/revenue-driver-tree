@@ -54,11 +54,18 @@ app.get("/api/health", (_req, res) => {
 
 // 6. Shared tree view (public, no auth)
 app.get("/api/shared/:token", async (req, res) => {
+  // Validate token format — must be alphanumeric, 8-24 chars (nanoid produces 12)
+  const token = req.params.token as string;
+  if (!token || token.length < 8 || token.length > 24 || !/^[A-Za-z0-9_-]+$/.test(token)) {
+    res.status(400).json({ error: "Invalid share token format" });
+    return;
+  }
+
   try {
     const [row] = await db
       .select()
       .from(schema.trees)
-      .where(eq(schema.trees.shareToken, req.params.token as string))
+      .where(eq(schema.trees.shareToken, token))
       .limit(1);
 
     if (!row) {

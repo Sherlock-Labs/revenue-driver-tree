@@ -21,6 +21,19 @@ import {
 
 const router = Router();
 
+// ─── Validation helpers ─────────────────────────────────────────
+
+const UUIDSchema = z.string().uuid();
+
+function parseUUID(id: string, res: Response): string | null {
+  const result = UUIDSchema.safeParse(id);
+  if (!result.success) {
+    res.status(400).json({ error: "Invalid tree ID format" });
+    return null;
+  }
+  return result.data;
+}
+
 // ─── Helper: merge AI values into template ─────────────────────
 
 function mergeValuesIntoTemplate(
@@ -93,7 +106,7 @@ function mergeValuesIntoTemplate(
 // ─── POST /api/trees — Create tree ─────────────────────────────
 
 const CreateTreeSchema = z.object({
-  name: z.string().optional(),
+  name: z.string().min(1).max(500).optional(),
   inputs: TreeInputsSchema,
 });
 
@@ -220,11 +233,14 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const treeId = parseUUID(req.params.id as string, res);
+  if (!treeId) return;
+
   try {
     const [row] = await db
       .select()
       .from(schema.trees)
-      .where(eq(schema.trees.id, req.params.id as string))
+      .where(eq(schema.trees.id, treeId))
       .limit(1);
 
     if (!row) {
@@ -257,8 +273,8 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
 // ─── PUT /api/trees/:id — Save tree (auto-save) ────────────────
 
 const UpdateTreeSchema = z.object({
-  name: z.string().optional(),
-  nodes: z.array(TreeNodeSchema),
+  name: z.string().min(1).max(500).optional(),
+  nodes: z.array(TreeNodeSchema).max(200),
 });
 
 router.put("/:id", async (req: Request, res: Response): Promise<void> => {
@@ -267,6 +283,9 @@ router.put("/:id", async (req: Request, res: Response): Promise<void> => {
     res.status(401).json({ error: "Authentication required" });
     return;
   }
+
+  const treeId = parseUUID(req.params.id as string, res);
+  if (!treeId) return;
 
   const parsed = UpdateTreeSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -279,7 +298,7 @@ router.put("/:id", async (req: Request, res: Response): Promise<void> => {
     const [existing] = await db
       .select()
       .from(schema.trees)
-      .where(eq(schema.trees.id, req.params.id as string))
+      .where(eq(schema.trees.id, treeId))
       .limit(1);
 
     if (!existing) {
@@ -304,7 +323,7 @@ router.put("/:id", async (req: Request, res: Response): Promise<void> => {
     const [updated] = await db
       .update(schema.trees)
       .set(updateData)
-      .where(eq(schema.trees.id, req.params.id as string))
+      .where(eq(schema.trees.id, treeId))
       .returning();
 
     const response: Tree = {
@@ -333,11 +352,14 @@ router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const treeId = parseUUID(req.params.id as string, res);
+  if (!treeId) return;
+
   try {
     const [existing] = await db
       .select()
       .from(schema.trees)
-      .where(eq(schema.trees.id, req.params.id as string))
+      .where(eq(schema.trees.id, treeId))
       .limit(1);
 
     if (!existing) {
@@ -350,7 +372,7 @@ router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    await db.delete(schema.trees).where(eq(schema.trees.id, req.params.id as string));
+    await db.delete(schema.trees).where(eq(schema.trees.id, treeId));
 
     res.status(200).json({ success: true });
   } catch (error) {
@@ -361,6 +383,10 @@ router.delete("/:id", async (req: Request, res: Response): Promise<void> => {
 
 // ─── POST /api/trees/:id/duplicate ──────────────────────────────
 
+const DuplicateTreeSchema = z.object({
+  name: z.string().min(1).max(500).optional(),
+});
+
 router.post("/:id/duplicate", async (req: Request, res: Response): Promise<void> => {
   const clerkUserId = getUserId(req);
   if (!clerkUserId) {
@@ -368,11 +394,20 @@ router.post("/:id/duplicate", async (req: Request, res: Response): Promise<void>
     return;
   }
 
+  const treeId = parseUUID(req.params.id as string, res);
+  if (!treeId) return;
+
+  const parsed = DuplicateTreeSchema.safeParse(req.body ?? {});
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request", details: parsed.error.flatten() });
+    return;
+  }
+
   try {
     const [existing] = await db
       .select()
       .from(schema.trees)
-      .where(eq(schema.trees.id, req.params.id as string))
+      .where(eq(schema.trees.id, treeId))
       .limit(1);
 
     if (!existing) {
@@ -385,7 +420,7 @@ router.post("/:id/duplicate", async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const duplicateName = req.body?.name || `${existing.name} (copy)`;
+    const duplicateName = parsed.data.name || `${existing.name} (copy)`;
 
     const [duplicate] = await db
       .insert(schema.trees)
@@ -423,11 +458,14 @@ router.post("/:id/summarize", async (req: Request, res: Response): Promise<void>
     return;
   }
 
+  const treeId = parseUUID(req.params.id as string, res);
+  if (!treeId) return;
+
   try {
     const [row] = await db
       .select()
       .from(schema.trees)
-      .where(eq(schema.trees.id, req.params.id as string))
+      .where(eq(schema.trees.id, treeId))
       .limit(1);
 
     if (!row) {
@@ -473,11 +511,14 @@ router.post("/:id/share", async (req: Request, res: Response): Promise<void> => 
     return;
   }
 
+  const treeId = parseUUID(req.params.id as string, res);
+  if (!treeId) return;
+
   try {
     const [existing] = await db
       .select()
       .from(schema.trees)
-      .where(eq(schema.trees.id, req.params.id as string))
+      .where(eq(schema.trees.id, treeId))
       .limit(1);
 
     if (!existing) {
@@ -506,7 +547,7 @@ router.post("/:id/share", async (req: Request, res: Response): Promise<void> => 
     await db
       .update(schema.trees)
       .set({ shareToken, updatedAt: new Date() })
-      .where(eq(schema.trees.id, req.params.id as string));
+      .where(eq(schema.trees.id, treeId));
 
     const appUrl = process.env.APP_URL || "http://localhost:5173";
     res.status(200).json({

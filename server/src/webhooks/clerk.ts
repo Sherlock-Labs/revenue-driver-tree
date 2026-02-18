@@ -57,8 +57,12 @@ export async function handleClerkWebhook(req: Request, res: Response): Promise<v
     return;
   }
 
-  // Idempotency check
+  // Idempotency: claim event atomically via INSERT ... ON CONFLICT DO NOTHING.
+  // If a concurrent request already claimed it, the insert returns 0 rows.
+  // This eliminates the race condition in SELECT-then-INSERT patterns.
   const eventId = svixId;
+
+  // Fast path: check if already processed (covers the common retry case)
   const existing = await db
     .select()
     .from(schema.processedEvents)
@@ -66,7 +70,19 @@ export async function handleClerkWebhook(req: Request, res: Response): Promise<v
     .limit(1);
 
   if (existing.length > 0) {
-    // Already processed — return 200 to prevent retries
+    res.status(200).json({ received: true, deduplicated: true });
+    return;
+  }
+
+  // Atomic claim: INSERT with ON CONFLICT protects against concurrent duplicates
+  const [claimed] = await db
+    .insert(schema.processedEvents)
+    .values({ eventId, source: "clerk" })
+    .onConflictDoNothing({ target: schema.processedEvents.eventId })
+    .returning();
+
+  if (!claimed) {
+    // Another concurrent request claimed this event between our SELECT and INSERT
     res.status(200).json({ received: true, deduplicated: true });
     return;
   }
@@ -113,12 +129,6 @@ export async function handleClerkWebhook(req: Request, res: Response): Promise<v
         // Unhandled event type — acknowledge but don't process
         console.log(`Unhandled webhook event type: ${event.type}`);
     }
-
-    // Mark event as processed for idempotency
-    await db.insert(schema.processedEvents).values({
-      eventId,
-      source: "clerk",
-    });
 
     res.status(200).json({ received: true });
   } catch (err) {

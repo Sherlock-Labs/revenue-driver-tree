@@ -661,6 +661,7 @@ function FormField({
   optional,
   inputMode,
 }: FormFieldProps) {
+  const isRequired = !optional;
   return (
     <div className="form-field">
       <label className="form-field__label" htmlFor={name}>
@@ -668,7 +669,7 @@ function FormField({
         {optional && <span className="form-field__optional-tag">(optional)</span>}
       </label>
       <div className="form-field__input-wrapper">
-        {prefix && <span className="form-field__prefix">{prefix}</span>}
+        {prefix && <span className="form-field__prefix" aria-hidden="true">{prefix}</span>}
         <input
           id={name}
           name={name}
@@ -680,10 +681,12 @@ function FormField({
           onBlur={onBlur}
           disabled={disabled}
           inputMode={inputMode}
+          required={isRequired}
+          aria-required={isRequired}
           aria-describedby={`${name}-helper`}
           aria-invalid={!!error}
         />
-        {suffix && <span className="form-field__suffix">{suffix}</span>}
+        {suffix && <span className="form-field__suffix" aria-hidden="true">{suffix}</span>}
       </div>
       {error ? (
         <span className="form-field__error" role="alert" id={`${name}-helper`}>

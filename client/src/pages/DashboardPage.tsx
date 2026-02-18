@@ -7,7 +7,7 @@
  * Design spec Section 4
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Monitor } from "lucide-react";
 import { AppHeader } from "../components/layout/AppHeader.js";
@@ -26,6 +26,10 @@ export default function DashboardPage() {
   } | null>(null);
   const [deleteDisabled, setDeleteDisabled] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Ref to the element that triggered the delete modal — focus returns here on close
+  const deleteTriggerRef = useRef<HTMLElement | null>(null);
+  // Ref to the modal's first focusable element (Cancel button)
+  const modalCancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     loadTrees();
@@ -57,14 +61,20 @@ export default function DashboardPage() {
   }
 
   function openDeleteModal(id: string, name: string) {
+    // Capture the currently focused element so we can return focus when modal closes
+    deleteTriggerRef.current = document.activeElement as HTMLElement;
     setDeleteModal({ id, name });
     setDeleteDisabled(true);
     // Enable delete button after 2 seconds
     setTimeout(() => setDeleteDisabled(false), 2000);
+    // Move focus to the Cancel button when modal opens
+    setTimeout(() => modalCancelRef.current?.focus(), 50);
   }
 
   function closeDeleteModal() {
     setDeleteModal(null);
+    // Return focus to the element that triggered the modal
+    setTimeout(() => deleteTriggerRef.current?.focus(), 50);
   }
 
   async function confirmDelete() {
@@ -87,7 +97,7 @@ export default function DashboardPage() {
 
       {/* Desktop-only gate for narrow viewports */}
       <div className="desktop-only-message" aria-live="polite">
-        <Monitor size={48} />
+        <Monitor size={48} aria-hidden="true" />
         <h2 className="desktop-only-message__heading">Best on a larger screen</h2>
         <p className="desktop-only-message__body">
           Revenue Driver Tree is built for desktop. Open it on a computer or
@@ -109,7 +119,12 @@ export default function DashboardPage() {
 
           {/* Loading state — 3 skeleton cards */}
           {loading && (
-            <div className="dashboard__grid">
+            <div
+              className="dashboard__grid"
+              aria-label="Loading your trees"
+              aria-busy="true"
+              role="status"
+            >
               {[0, 1, 2].map((i) => (
                 <SkeletonCard key={i} />
               ))}
@@ -171,6 +186,34 @@ export default function DashboardPage() {
           onClick={(e) => {
             if (e.target === e.currentTarget) closeDeleteModal();
           }}
+          onKeyDown={(e) => {
+            // Close on Escape
+            if (e.key === "Escape") closeDeleteModal();
+            // Focus trap: keep Tab/Shift+Tab inside the modal
+            if (e.key === "Tab") {
+              const modal = e.currentTarget.querySelector(".modal") as HTMLElement;
+              if (!modal) return;
+              const focusable = Array.from(
+                modal.querySelectorAll<HTMLElement>(
+                  'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                )
+              );
+              if (focusable.length === 0) return;
+              const first = focusable[0];
+              const last = focusable[focusable.length - 1];
+              if (e.shiftKey) {
+                if (document.activeElement === first) {
+                  e.preventDefault();
+                  last.focus();
+                }
+              } else {
+                if (document.activeElement === last) {
+                  e.preventDefault();
+                  first.focus();
+                }
+              }
+            }
+          }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-modal-title"
@@ -185,6 +228,7 @@ export default function DashboardPage() {
             <p className="delete-modal__body">This can't be undone.</p>
             <div className="delete-modal__actions">
               <button
+                ref={modalCancelRef}
                 className="btn btn-secondary"
                 onClick={closeDeleteModal}
               >
@@ -194,6 +238,7 @@ export default function DashboardPage() {
                 className="btn btn-destructive"
                 onClick={confirmDelete}
                 disabled={deleteDisabled || deleting}
+                aria-disabled={deleteDisabled || deleting}
               >
                 {deleting ? "Deleting..." : "Delete"}
               </button>

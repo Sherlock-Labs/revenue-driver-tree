@@ -84,11 +84,16 @@ export function InlineValueEditor({
         onBlur={handleBlur}
         type="text"
         inputMode="decimal"
-        aria-label="Edit value"
-        aria-invalid={error}
+        aria-label="Edit value. Press Enter to confirm, Escape to cancel."
+        aria-invalid={error || undefined}
+        aria-describedby={error ? "inline-editor-error" : undefined}
       />
       {error && (
-        <span className="inline-editor__error-text">
+        <span
+          id="inline-editor-error"
+          className="inline-editor__error-text"
+          role="alert"
+        >
           Enter a positive number
         </span>
       )}

@@ -6,7 +6,7 @@
  * Design spec Section 9
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   X,
   Sparkles,
@@ -37,6 +37,25 @@ export function SummaryPanel({
   const [loadingText, setLoadingText] = useState("Generating summary...");
   const [copied, setCopied] = useState(false);
   const [loadingTimer, setLoadingTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+  // Ref to the close button — focus moves here when panel opens
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  // Track previous isOpen value to detect transitions
+  const prevIsOpenRef = useRef(false);
+
+  // Move focus to panel close button when panel opens
+  useEffect(() => {
+    if (isOpen && !prevIsOpenRef.current) {
+      // Small delay to let the CSS transition begin
+      const timer = setTimeout(() => {
+        closeBtnRef.current?.focus();
+      }, 50);
+      prevIsOpenRef.current = true;
+      return () => clearTimeout(timer);
+    }
+    if (!isOpen) {
+      prevIsOpenRef.current = false;
+    }
+  }, [isOpen]);
 
   // Update loading text after 5s
   useEffect(() => {
@@ -84,13 +103,14 @@ export function SummaryPanel({
       <div
         className={`summary-panel${isOpen ? " summary-panel--open" : ""}`}
         role="complementary"
-        aria-label="Scenario summary"
+        aria-labelledby="summary-panel-title"
         aria-hidden={!isOpen}
       >
         {/* Header */}
         <div className="summary-panel__header">
-          <span className="summary-panel__title">Scenario summary</span>
+          <span className="summary-panel__title" id="summary-panel-title">Scenario summary</span>
           <button
+            ref={closeBtnRef}
             className="icon-btn"
             onClick={onClose}
             aria-label="Close summary panel"
@@ -99,7 +119,7 @@ export function SummaryPanel({
           </button>
         </div>
 
-        {/* Body */}
+        {/* Body — aria-live region announces loading/completion to screen readers */}
         <div className="summary-panel__body">
           {panelState === "idle" && (
             <div className="summary-panel__intro">
@@ -112,21 +132,21 @@ export function SummaryPanel({
                 className="btn btn-primary"
                 onClick={handleGenerate}
               >
-                <Sparkles size={16} />
+                <Sparkles size={16} aria-hidden="true" />
                 Summarize this scenario
               </button>
             </div>
           )}
 
           {panelState === "loading" && (
-            <div className="summary-panel__loading">
-              <Loader2 size={24} className="summary-panel__loading-spinner" />
+            <div className="summary-panel__loading" aria-live="polite" aria-atomic="true">
+              <Loader2 size={24} className="summary-panel__loading-spinner" aria-hidden="true" />
               <p className="summary-panel__loading-text">{loadingText}</p>
             </div>
           )}
 
           {panelState === "success" && (
-            <div className="summary-panel__content">
+            <div className="summary-panel__content" aria-live="polite" aria-atomic="false">
               <div className="summary-panel__text">
                 {summary.split("\n\n").map((para, i) => (
                   <p key={i} style={{ marginBottom: "var(--space-4)" }}>
@@ -141,8 +161,8 @@ export function SummaryPanel({
           )}
 
           {panelState === "error" && (
-            <div className="summary-panel__error">
-              <AlertCircle size={24} style={{ color: "var(--color-error)" }} />
+            <div className="summary-panel__error" role="alert">
+              <AlertCircle size={24} style={{ color: "var(--color-error)" }} aria-hidden="true" />
               <p className="summary-panel__error-text">
                 Couldn't generate summary. Try again.
               </p>
@@ -162,16 +182,18 @@ export function SummaryPanel({
             <button
               className="btn btn-secondary btn-compact"
               onClick={handleCopy}
+              aria-label={copied ? "Summary copied to clipboard" : "Copy summary to clipboard"}
             >
-              {copied ? <Check size={14} /> : <Copy size={14} />}
+              {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
               {copied ? "Copied!" : "Copy to clipboard"}
             </button>
             <button
               className="btn-ghost btn summary-panel__regenerate-btn"
               onClick={handleRegenerate}
+              aria-label="Regenerate summary"
               style={{ height: 32, padding: "0 var(--space-3)" }}
             >
-              <RefreshCw size={14} />
+              <RefreshCw size={14} aria-hidden="true" />
               Regenerate
             </button>
           </div>

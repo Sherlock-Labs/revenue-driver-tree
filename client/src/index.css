@@ -502,6 +502,26 @@ button {
 }
 
 /* =============================================================================
+   Accessibility Utilities
+   ============================================================================= */
+
+/* Visually hidden — hides from sighted users but keeps content in the
+   accessibility tree for screen readers. Use for live regions and
+   supplementary screen-reader-only text.
+   Never use display:none or visibility:hidden — those hide from AT too. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* =============================================================================
    React Flow overrides
    ============================================================================= */
 

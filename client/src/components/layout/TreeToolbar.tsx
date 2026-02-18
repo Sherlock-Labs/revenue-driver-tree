@@ -3,7 +3,7 @@
  * Design spec Section 6.2
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, type RefObject } from "react";
 import {
   Minus,
   Plus,
@@ -28,6 +28,8 @@ interface TreeToolbarProps {
   isSummaryOpen: boolean;
   readOnly?: boolean;
   flowInstance?: ReactFlowInstance | null;
+  /** Forwarded ref for the Summarize button — used to return focus when summary panel closes */
+  summarizeBtnRef?: RefObject<HTMLButtonElement>;
 }
 
 export function TreeToolbar({
@@ -41,6 +43,7 @@ export function TreeToolbar({
   onSummarize,
   isSummaryOpen,
   readOnly = false,
+  summarizeBtnRef,
 }: TreeToolbarProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(treeName);
@@ -89,6 +92,7 @@ export function TreeToolbar({
             onBlur={confirmName}
             onKeyDown={handleNameKeyDown}
             autoFocus
+            aria-label="Tree name. Press Enter to confirm, Escape to cancel."
           />
         ) : (
           <span
@@ -96,11 +100,17 @@ export function TreeToolbar({
             onClick={startEditingName}
             title={readOnly ? undefined : "Click to rename"}
             role={readOnly ? undefined : "button"}
+            aria-label={readOnly ? treeName : `Rename: ${treeName}. Press Enter to edit.`}
             tabIndex={readOnly ? undefined : 0}
             onKeyDown={
               readOnly
                 ? undefined
-                : (e) => e.key === "Enter" && startEditingName()
+                : (e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      startEditingName();
+                    }
+                  }
             }
           >
             {treeName}
@@ -200,16 +210,22 @@ export function TreeToolbar({
 
       {!readOnly && (
         <div className="tree-toolbar__right">
-          <button className="btn btn-secondary btn-compact" onClick={onShare}>
-            <LinkIcon size={16} />
+          <button
+            className="btn btn-secondary btn-compact"
+            onClick={onShare}
+            aria-label="Share — copy link to clipboard"
+          >
+            <LinkIcon size={16} aria-hidden="true" />
             Share
           </button>
           <button
+            ref={summarizeBtnRef}
             className="btn btn-primary btn-compact"
             onClick={onSummarize}
             aria-pressed={isSummaryOpen}
+            aria-label={isSummaryOpen ? "Close scenario summary panel" : "Open scenario summary panel"}
           >
-            <Sparkles size={16} />
+            <Sparkles size={16} aria-hidden="true" />
             Summarize
           </button>
         </div>

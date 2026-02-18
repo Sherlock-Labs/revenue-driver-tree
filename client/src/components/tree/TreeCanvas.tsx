@@ -82,8 +82,8 @@ function TreeCanvasInner({
 
   if (treeNodes.length === 0) {
     return (
-      <div className="tree-canvas-loading">
-        <div className="tree-canvas-loading__spinner" />
+      <div className="tree-canvas-loading" aria-live="polite" aria-label="Loading tree">
+        <div className="tree-canvas-loading__spinner" aria-hidden="true" />
         <p className="tree-canvas-loading__text">Loading tree...</p>
         <style>{`
           .tree-canvas-loading {
@@ -169,7 +169,12 @@ interface TreeCanvasProps extends TreeCanvasInnerProps {
 
 export function TreeCanvas({ className, ...props }: TreeCanvasProps) {
   return (
-    <div className={`tree-canvas ${className ?? ""}`} style={{ flex: 1, position: "relative" }}>
+    <div
+      className={`tree-canvas ${className ?? ""}`}
+      style={{ flex: 1, position: "relative" }}
+      role="tree"
+      aria-label="Revenue driver tree"
+    >
       <ReactFlowProvider>
         <TreeCanvasInner {...props} />
       </ReactFlowProvider>

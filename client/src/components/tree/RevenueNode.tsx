@@ -267,6 +267,11 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
       />
 
       <style>{`
+        @keyframes node-enter {
+          from { opacity: 0; transform: scale(0.96); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
         .revenue-node {
           background: var(--color-bg-card);
           border: 1.5px solid var(--color-border);

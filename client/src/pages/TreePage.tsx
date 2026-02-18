@@ -32,13 +32,38 @@ export default function TreePage() {
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const flowRef = useRef<ReactFlowInstance | null>(null);
+  // Ref to the Summarize toolbar button — focus returns here when summary panel closes
+  const summarizeBtnRef = useRef<HTMLButtonElement>(null);
 
   const setNodes = useTreeStore((s) => s.setNodes);
   const nodes = useTreeStore((s) => s.nodes);
   const saveStatus = useAutoSave(id ?? "", nodes);
+  // Announcement text for tree recalculation — read by screen readers via aria-live
+  const [recalcAnnouncement, setRecalcAnnouncement] = useState<string>("");
+  const recalcAnnouncementTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Register undo/redo keybindings
   useUndoRedo();
+
+  // Announce root node value changes to screen readers when tree recalculates
+  useEffect(() => {
+    const rootNode = nodes.find((n) => n.parentId === null);
+    if (!rootNode) return;
+    // Build announcement — format value for reading
+    const formatted =
+      rootNode.type === "currency"
+        ? new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 1 }).format(rootNode.value)
+        : rootNode.type === "percentage"
+        ? `${(rootNode.value * 100).toFixed(1)}%`
+        : rootNode.value.toLocaleString("en-US");
+    const delta = rootNode.value - rootNode.targetValue;
+    const deltaLabel =
+      Math.abs(delta) < 0.001 ? "on target" : `${delta >= 0 ? "+" : ""}${formatted} vs target`;
+    setRecalcAnnouncement(`Tree updated. ${rootNode.name}: ${formatted}. ${deltaLabel}.`);
+    // Clear announcement after 5s so it's not repeated on subsequent re-renders
+    if (recalcAnnouncementTimerRef.current) clearTimeout(recalcAnnouncementTimerRef.current);
+    recalcAnnouncementTimerRef.current = setTimeout(() => setRecalcAnnouncement(""), 5000);
+  }, [nodes]);
 
   useEffect(() => {
     if (!id) return;
@@ -237,11 +262,12 @@ export default function TreePage() {
         onShare={handleShare}
         onSummarize={() => setSummaryOpen(true)}
         isSummaryOpen={summaryOpen}
+        summarizeBtnRef={summarizeBtnRef}
       />
 
       {/* Desktop-only message for narrow viewports */}
       <div className="desktop-only-message tree-page-narrow-msg" aria-live="polite">
-        <Monitor size={48} />
+        <Monitor size={48} aria-hidden="true" />
         <h2 className="desktop-only-message__heading">Best on a larger screen</h2>
         <p className="desktop-only-message__body">
           Revenue Driver Tree is built for desktop. Open it on a computer or
@@ -257,10 +283,24 @@ export default function TreePage() {
 
         <SummaryPanel
           isOpen={summaryOpen}
-          onClose={() => setSummaryOpen(false)}
+          onClose={() => {
+            setSummaryOpen(false);
+            // Return focus to the Summarize button when the panel closes
+            setTimeout(() => summarizeBtnRef.current?.focus(), 50);
+          }}
           treeId={id ?? ""}
           onGenerate={handleGenerateSummary}
         />
+      </div>
+
+      {/* Visually hidden live region — announces tree recalculations to screen readers */}
+      <div
+        className="sr-only"
+        aria-live="polite"
+        aria-atomic="true"
+        aria-relevant="text"
+      >
+        {recalcAnnouncement}
       </div>
 
       {/* Share/copy toast */}

@@ -1,0 +1,24 @@
+{
+  "name": "revenue-driver-tree",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently \"vite\" \"tsx watch server/src/index.ts\"",
+    "build": "vite build && tsc -p server/tsconfig.json",
+    "start": "node server/dist/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "drizzle-kit": "^0.30.4",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "@vitejs/plugin-react": "^4.3.4"
+  }
+}

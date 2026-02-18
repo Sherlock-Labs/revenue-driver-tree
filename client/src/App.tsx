@@ -1,17 +1,25 @@
-import { Routes, Route } from "react-router-dom";
-import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp } from "@clerk/clerk-react";
-
 /**
- * App Routes — skeleton for Alice to implement page components.
+ * App — Root routes for Revenue Driver Tree.
  *
  * Route structure per tech approach Section 10b:
  * - / → LandingPage (public)
- * - /sign-in → Clerk <SignIn />
- * - /sign-up → Clerk <SignUp />
- * - /shared/:token → SharedTreePage (public)
+ * - /sign-in/* → SignInPage (Clerk)
+ * - /sign-up/* → SignUpPage (Clerk)
+ * - /shared/:token → SharedTreePage (public, read-only)
  * - /dashboard → DashboardPage (protected)
+ * - /dashboard/new → NewTreePage (protected)
  * - /tree/:id → TreePage (protected)
  */
+
+import { Routes, Route, Navigate } from "react-router-dom";
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+import LandingPage from "./pages/LandingPage.js";
+import SignInPage from "./pages/SignInPage.js";
+import SignUpPage from "./pages/SignUpPage.js";
+import SharedTreePage from "./pages/SharedTreePage.js";
+import DashboardPage from "./pages/DashboardPage.js";
+import TreePage from "./pages/TreePage.js";
+import NewTreePage from "./pages/NewTreePage.js";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return (
@@ -24,36 +32,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Placeholder pages — Alice will implement these
-function LandingPage() {
-  return <div>Landing Page — Alice will implement</div>;
-}
-
-function DashboardPage() {
-  return <div>Dashboard — Alice will implement</div>;
-}
-
-function TreePage() {
-  return <div>Tree Editor — Alice will implement</div>;
-}
-
-function SharedTreePage() {
-  return <div>Shared Tree View — Alice will implement</div>;
-}
-
 export default function App() {
   return (
     <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
-      <Route
-        path="/sign-in/*"
-        element={<SignIn routing="path" path="/sign-in" />}
-      />
-      <Route
-        path="/sign-up/*"
-        element={<SignUp routing="path" path="/sign-up" />}
-      />
+      <Route path="/sign-in/*" element={<SignInPage />} />
+      <Route path="/sign-up/*" element={<SignUpPage />} />
       <Route path="/shared/:token" element={<SharedTreePage />} />
 
       {/* Protected routes */}
@@ -66,6 +51,14 @@ export default function App() {
         }
       />
       <Route
+        path="/dashboard/new"
+        element={
+          <ProtectedRoute>
+            <NewTreePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/tree/:id"
         element={
           <ProtectedRoute>
@@ -73,6 +66,9 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* Fallback: redirect unknown paths to landing */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

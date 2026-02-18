@@ -340,7 +340,7 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          max-width: 160px;
+          max-width: 200px;
           line-height: var(--leading-tight);
         }
 

@@ -257,7 +257,7 @@ export default function LandingPage() {
           font-weight: var(--weight-semibold);
           color: var(--color-text-primary);
           line-height: var(--leading-tight);
-          margin-bottom: var(--space-6);
+          margin-bottom: var(--space-3);
         }
 
         .landing-bottom-cta__note {

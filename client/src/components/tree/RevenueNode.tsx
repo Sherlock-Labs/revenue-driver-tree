@@ -11,7 +11,7 @@
  * Design spec Section 7
  */
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Handle, Position } from "@xyflow/react";
 import type { NodeProps } from "@xyflow/react";
 import {
@@ -36,11 +36,42 @@ interface RevenueNodeProps extends NodeProps {
 
 export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isPinAnimating, setIsPinAnimating] = useState(false);
+  const [isHighlighted, setIsHighlighted] = useState(false);
+  // isRecalculating drives the CSS animation — toggled on then cleared after 300ms
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const hasAnimatedArrival = useRef(false);
 
   const updateNodeValue = useTreeStore((s) => s.updateNodeValue);
   const togglePin = useTreeStore((s) => s.togglePin);
   const toggleCollapse = useTreeStore((s) => s.toggleCollapse);
   const allNodes = useTreeStore((s) => s.nodes);
+  const recalculatingNodeDepths = useTreeStore((s) => s.recalculatingNodeDepths);
+
+  // Node arrival animation — fires once when the node first mounts
+  useEffect(() => {
+    if (!hasAnimatedArrival.current) {
+      hasAnimatedArrival.current = true;
+      setIsHighlighted(true);
+      setTimeout(() => setIsHighlighted(false), 600);
+    }
+  }, []);
+
+  // Recalculation ripple — fires when this node is in the recalculating set
+  useEffect(() => {
+    if (recalculatingNodeDepths.size === 0) return;
+    const depth = recalculatingNodeDepths.get(data.id);
+    if (depth === undefined) return;
+
+    const delay = (depth - 1) * 50; // 0ms for depth 1, 50ms for depth 2, etc.
+    const startTimer = setTimeout(() => {
+      setIsRecalculating(true);
+      // Clear the animation class after it completes (300ms animation + buffer)
+      const clearTimer = setTimeout(() => setIsRecalculating(false), 350);
+      return () => clearTimeout(clearTimer);
+    }, delay);
+    return () => clearTimeout(startTimer);
+  }, [recalculatingNodeDepths, data.id]);
 
   const branchNodeIds = buildBranchNodeIds(allNodes);
   const hasChildren = branchNodeIds.has(data.id);
@@ -53,6 +84,8 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
 
   // Determine node variant for class
   const statusClass = data.pinned ? "revenue-node--pinned" : `revenue-node--${status}`;
+  const recalcClass = isRecalculating ? "revenue-node--recalculating" : "";
+  const highlightClass = isHighlighted ? "revenue-node--highlight" : "";
 
   // Is this a percentage node with a slider?
   const hasSlider = data.type === "percentage" && data.computeType === "input";
@@ -75,6 +108,8 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
   function handlePinClick(e: React.MouseEvent) {
     e.stopPropagation();
     if (readOnly) return;
+    setIsPinAnimating(true);
+    setTimeout(() => setIsPinAnimating(false), 200);
     togglePin(data.id);
   }
 
@@ -88,10 +123,11 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
   }
 
   function getDeltaIcon() {
+    // aria-hidden: the delta text below already conveys direction — icon is decorative
     if (delta >= 0) {
-      return <TrendingUp size={12} style={{ color: `var(--color-status-${status})` }} />;
+      return <TrendingUp size={12} style={{ color: `var(--color-status-${status})` }} aria-hidden="true" />;
     }
-    return <TrendingDown size={12} style={{ color: `var(--color-status-${status})` }} />;
+    return <TrendingDown size={12} style={{ color: `var(--color-status-${status})` }} aria-hidden="true" />;
   }
 
   function getDeltaText() {
@@ -106,10 +142,10 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
 
   return (
     <div
-      className={`revenue-node ${statusClass}`}
+      className={`revenue-node ${statusClass} ${recalcClass} ${highlightClass}`.trim()}
       style={{ width: 260, height: nodeHeight }}
       role="treeitem"
-      aria-label={`${data.name}: ${formatValue(data.value, data.type)}, ${status}`}
+      aria-label={`${data.name}: ${formatValue(data.value, data.type)}, ${status === "on-track" ? "on track" : status === "at-risk" ? "at risk" : "behind"}${data.pinned ? ", pinned" : ""}`}
       aria-expanded={hasChildren ? !data.collapsed : undefined}
       tabIndex={0}
     >
@@ -130,7 +166,7 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
           {/* Pin button — only for computed nodes */}
           {data.computeType !== "input" && (
             <button
-              className="icon-btn icon-btn--sm revenue-node__pin-btn nodrag"
+              className={`icon-btn icon-btn--sm revenue-node__pin-btn nodrag${isPinAnimating ? " revenue-node__pin-btn--animating" : ""}`}
               onClick={handlePinClick}
               disabled={readOnly}
               title={data.pinned ? "Unpin node" : "Pin node"}
@@ -180,15 +216,19 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
             onClick={readOnly ? undefined : handleValueClick}
             role={readOnly ? undefined : "button"}
             tabIndex={readOnly ? undefined : 0}
+            aria-label={readOnly ? undefined : `Edit ${data.name} value: ${formatValue(data.value, data.type)}. Press Enter to edit.`}
             onKeyDown={
               readOnly
                 ? undefined
                 : (e) => {
                     e.stopPropagation();
-                    if (e.key === "Enter") setIsEditing(true);
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setIsEditing(true);
+                    }
                   }
             }
-            title={readOnly ? undefined : "Click to edit"}
+            title={readOnly ? undefined : "Click or press Enter to edit"}
           >
             {formatValue(data.value, data.type)}
           </div>
@@ -239,6 +279,7 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
           display: flex;
           flex-direction: column;
           box-sizing: border-box;
+          animation: node-enter 250ms var(--ease-out) both;
         }
 
         .revenue-node:hover {
@@ -316,6 +357,17 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
           transform: scale(1.15);
         }
 
+        /* Pin toggle animation — scale pulse via keyframe */
+        @keyframes pin-pulse {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(1.25); }
+          100% { transform: scale(1); }
+        }
+
+        .revenue-node__pin-btn--animating {
+          animation: pin-pulse 200ms var(--ease-spring);
+        }
+
         .revenue-node__body {
           padding: var(--space-1-5) var(--space-3) var(--space-3);
           flex: 1;
@@ -338,6 +390,11 @@ export function RevenueNode({ data, readOnly = false }: RevenueNodeProps) {
 
         .revenue-node__value:hover {
           background: var(--color-bg-hover);
+        }
+
+        .revenue-node__value:focus-visible {
+          outline: 2px solid var(--color-focus-ring);
+          outline-offset: 1px;
         }
 
         .revenue-node__delta {

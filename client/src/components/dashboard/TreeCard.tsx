@@ -165,13 +165,23 @@ export function TreeCard({ tree, onDuplicate, onDelete }: TreeCardProps) {
           border-radius: var(--radius-lg);
           padding: var(--space-6);
           cursor: pointer;
-          transition: border-color var(--duration-fast) var(--ease-default);
+          transition:
+            border-color var(--duration-fast) var(--ease-default),
+            box-shadow var(--duration-fast) var(--ease-default),
+            transform var(--duration-fast) var(--ease-out);
           position: relative;
           user-select: none;
         }
 
         .tree-card:hover {
           border-color: var(--color-border-strong);
+          box-shadow: var(--shadow-md);
+          transform: translateY(-2px);
+        }
+
+        .tree-card:active {
+          transform: translateY(0);
+          box-shadow: var(--shadow-xs);
         }
 
         .tree-card:focus-visible {
@@ -202,6 +212,11 @@ export function TreeCard({ tree, onDuplicate, onDelete }: TreeCardProps) {
           flex-shrink: 0;
         }
 
+        @keyframes menu-enter {
+          from { opacity: 0; transform: scale(0.95) translateY(-4px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
         .tree-card-menu {
           position: absolute;
           top: 36px;
@@ -213,6 +228,8 @@ export function TreeCard({ tree, onDuplicate, onDelete }: TreeCardProps) {
           min-width: 160px;
           z-index: var(--z-modal);
           padding: var(--space-1) 0;
+          animation: menu-enter 150ms var(--ease-out);
+          transform-origin: top right;
         }
 
         .tree-card-menu__item {

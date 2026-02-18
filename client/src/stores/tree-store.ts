@@ -20,6 +20,13 @@ interface TreeState {
   undoStack: TreeNode[][];
   redoStack: TreeNode[][];
 
+  /**
+   * Map of nodeId -> depth (levels above the changed node, 1 = direct parent).
+   * Populated by updateNodeValue so RevenueNode can apply staggered ripple.
+   * Cleared after 500ms (enough time for all animations to complete).
+   */
+  recalculatingNodeDepths: Map<string, number>;
+
   // Actions
   setNodes: (nodes: TreeNode[]) => void;
   updateNodeValue: (nodeId: string, value: number) => void;
@@ -35,6 +42,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
   selectedNodeId: null,
   undoStack: [],
   redoStack: [],
+  recalculatingNodeDepths: new Map(),
 
   setNodes: (nodes) => set({ nodes, undoStack: [], redoStack: [] }),
 
@@ -52,11 +60,32 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     // Recalculate the tree
     const recalculated = recalculate(updatedNodes, nodeId);
 
+    // Build ancestor depth map for ripple animation
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    const recalcDepths = new Map<string, number>();
+    let depth = 1;
+    let currentId = nodeMap.get(nodeId)?.parentId ?? null;
+    while (currentId !== null) {
+      const ancestor = nodeMap.get(currentId);
+      if (!ancestor) break;
+      if (ancestor.pinned) break; // Ripple stops at pinned nodes
+      recalcDepths.set(currentId, depth);
+      depth++;
+      currentId = ancestor.parentId;
+    }
+
     set({
       nodes: recalculated,
       undoStack: newUndoStack,
       redoStack: [], // Clear redo on new edit
+      recalculatingNodeDepths: recalcDepths,
     });
+
+    // Clear the ripple state after all animations complete (max depth * 50ms + 300ms animation)
+    const clearDelay = Math.max(depth * 50 + 350, 500);
+    setTimeout(() => {
+      set({ recalculatingNodeDepths: new Map() });
+    }, clearDelay);
   },
 
   togglePin: (nodeId) => {
